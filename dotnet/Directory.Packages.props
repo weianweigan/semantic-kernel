@@ -8,6 +8,7 @@
     <PackageVersion Include="Azure.AI.OpenAI" Version="1.0.0-beta.5" />
     <PackageVersion Include="Azure.Identity" Version="1.9.0" />
     <PackageVersion Include="Azure.Search.Documents" Version="11.5.0-beta.2" />
+    <PackageVersion Include="IO.Milvus" Version="2.2.1-alpha.8" />
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="[1.1.0, )" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="[7.0.0, )" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="7.0.0" />
@@ -50,7 +51,7 @@
     <PackageVersion Include="CoreCLR-NCalc" Version="2.2.113"/>
     <!-- Symbols -->
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.1.1" />
-
+    
     <!-- Analyzers -->
     <!-- TODO: Not working with .NET Standard 2.0
     <PackageVersion Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform" Version="4.1.0" />
