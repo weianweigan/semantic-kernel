@@ -1,13 +1,4 @@
-﻿using Grpc.Net.Client;
-using IO.Milvus;
-using IO.Milvus.Client;
-using IO.Milvus.Client.gRPC;
-using IO.Milvus.Client.REST;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.SemanticKernel.AI.Embeddings;
-using Microsoft.SemanticKernel.Memory;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -16,6 +7,15 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Grpc.Net.Client;
+using IO.Milvus;
+using IO.Milvus.Client;
+using IO.Milvus.Client.gRPC;
+using IO.Milvus.Client.REST;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.SemanticKernel.AI.Embeddings;
+using Microsoft.SemanticKernel.Memory;
 
 namespace Microsoft.SemanticKernel.Connectors.Memory.Milvus;
 
@@ -35,6 +35,9 @@ public class MilvusMemoryStore : IMilvusMemoryStore
     private readonly MilvusIndexType _milvusIndexType;
     private readonly ILogger _log;
     private bool _disposedValue;
+
+    ///<inheritdoc/>
+    public IMilvusClient MilvusClient => this._milvusClient;
 
     /// <summary>
     /// Construct a milvus memory store.
@@ -404,6 +407,8 @@ public class MilvusMemoryStore : IMilvusMemoryStore
         MemoryRecord record,
         CancellationToken cancellationToken = default)
     {
+        //TODO: Check if record's id exists when autoId == false
+
         MilvusMutationResult insertResult = await this._milvusClient.InsertAsync(
             collectionName,
             new Field[] {
