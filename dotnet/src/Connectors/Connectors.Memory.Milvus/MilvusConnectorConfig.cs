@@ -35,6 +35,9 @@ public sealed class MilvusConnectorConfig
     /// Use json field to store <see cref="MemoryRecordMetadata"/>
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// <c>Available above milvus v2.2.9</c>
+    /// </para>
     /// <see href="https://milvus.io/docs/json_data_type.md"/>
     /// </remarks>
     public bool JsonFieldForMetadata { get; set; } = false;

@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -407,12 +409,10 @@ public class MilvusMemoryStore : IMilvusMemoryStore
         MemoryRecord record,
         CancellationToken cancellationToken = default)
     {
-        //TODO: Check if record's id exists when autoId == false
-
         MilvusMutationResult insertResult = await this._milvusClient.InsertAsync(
             collectionName,
             new Field[] {
-                this.ToIdField(record),
+                await this.ToIdFieldAsync(collectionName, record, cancellationToken).ConfigureAwait(false),
                 this.ToFloatField(record),
                 this.ToMetadataField(record)},
             cancellationToken: cancellationToken)
@@ -435,7 +435,7 @@ public class MilvusMemoryStore : IMilvusMemoryStore
         MilvusMutationResult insertResult = await this._milvusClient.InsertAsync(
             collectionName,
             new Field[] {
-                this.ToIdField(records),
+                await this.ToIdFieldAsync(collectionName, records, cancellationToken).ConfigureAwait(false),
                 this.ToFloatField(records),
                 this.ToMetadataField(records)},
             cancellationToken: cancellationToken)
@@ -481,14 +481,24 @@ public class MilvusMemoryStore : IMilvusMemoryStore
         return stringBuilder;
     }
 
-    private Field<string> ToIdField(MemoryRecord record)
+    private async Task<Field<string>> ToIdFieldAsync(
+        string collectionName,
+        MemoryRecord record,
+        CancellationToken cancellationToken = default)
     {
-        return Field.Create(IdFieldName, new[] { record.Metadata.Id });
+        string id = await this.ReSolveIdAsync(collectionName, record, cancellationToken).ConfigureAwait(false);
+        return Field.Create(IdFieldName, new[] { id });
     }
 
-    private Field<string> ToIdField(IEnumerable<MemoryRecord> records)
+    private async Task<Field<string>> ToIdFieldAsync(
+        string collectionName,
+        IEnumerable<MemoryRecord> records,
+        CancellationToken cancellationToken)
     {
-        return Field.Create(IdFieldName, records.Select(m => m.Metadata.Id).ToList());
+        var tasks = Task.WhenAll(records.Select(async r => await this.ReSolveIdAsync(collectionName, r, cancellationToken).ConfigureAwait(false)));
+        var ids = await tasks.ConfigureAwait(false);
+
+        return Field.Create(IdFieldName, ids);
     }
 
     private FloatVectorField ToFloatField(MemoryRecord record)
@@ -509,6 +519,48 @@ public class MilvusMemoryStore : IMilvusMemoryStore
     private Field<string> ToMetadataField(IEnumerable<MemoryRecord> record)
     {
         return Field.CreateVarChar(MetadataFieldName, record.Select(m => m.GetSerializedMetadata()).ToList());
+    }
+
+    private async Task<string> ReSolveIdAsync(
+        string collectionName,
+        MemoryRecord record,
+        CancellationToken cancellationToken = default)
+    {
+        //TODO: Check if record's id exists when autoId == false
+        string pointId;
+
+        // Check if a database key has been provided for update
+        if (!string.IsNullOrEmpty(record.Key))
+        {
+            pointId = record.Key;
+        }
+        // Check if the data store contains a record with the provided metadata ID
+        else
+        {
+            var existingRecord = await this.GetAsync(
+                    collectionName,
+                    record.Metadata.Id,
+                    false,
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+
+            if (existingRecord != null)
+            {
+                pointId = existingRecord.Metadata.Id;
+            }
+            else
+            {
+                do // Generate a new ID until a unique one is found (more than one pass should be exceedingly rare)
+                {
+                    // If no matching record can be found, generate an ID for the new record
+                    pointId = Guid.NewGuid().ToString();
+                    existingRecord = await this.GetAsync(collectionName, pointId, false, cancellationToken: cancellationToken)
+                        .ConfigureAwait(false);
+                } while (existingRecord != null);
+            }
+        }
+
+        return pointId;
     }
     #endregion
 }
